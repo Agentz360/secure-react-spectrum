@@ -11,14 +11,38 @@
  */
 
 import {action} from 'storybook/actions';
-import {Button, Cell, Checkbox, CheckboxProps, Collection, Column, ColumnProps, ColumnResizer, Dialog, DialogTrigger, DropIndicator, Heading, Menu, MenuTrigger, Modal, ModalOverlay, Popover, ResizableTableContainer, Row, Table, TableBody, TableHeader, TableLayout, useDragAndDrop, Virtualizer} from 'react-aria-components';
-import {isTextDropItem} from 'react-aria';
+import {Button} from '../src/Button';
+
+import {
+  Cell,
+  Column,
+  ColumnProps,
+  ColumnResizer,
+  ResizableTableContainer,
+  Row,
+  Table,
+  TableBody,
+  TableHeader,
+  TableLayout
+} from '../src/Table';
+
+import {CellProps, TableLoadMoreItem} from '../src/Table';
+import {Checkbox, CheckboxProps} from '../src/Checkbox';
+import {Collection} from 'react-aria/Collection';
+import {Dialog, DialogTrigger} from '../src/Dialog';
+import {DropIndicator, isTextDropItem, useDragAndDrop} from '../exports/useDragAndDrop';
+import {Heading} from '../src/Heading';
 import {LoadingSpinner, MyMenuItem} from './utils';
+import {Menu, MenuTrigger} from '../src/Menu';
 import {Meta, StoryFn, StoryObj} from '@storybook/react';
+import {Modal, ModalOverlay} from '../src/Modal';
+import {Popover} from '../src/Popover';
 import React, {JSX, startTransition, Suspense, useState} from 'react';
-import {Selection, useAsyncList, useListData} from 'react-stately';
+import {Selection} from '@react-types/shared';
 import styles from '../example/index.css';
-import {TableLoadMoreItem} from '../src/Table';
+import {useAsyncList} from 'react-stately/useAsyncList';
+import {useListData} from 'react-stately/useListData';
+import {Virtualizer} from '../src/Virtualizer';
 import './styles.css';
 
 export default {
@@ -117,68 +141,106 @@ const TableExample: TableStory = (args) => {
   });
 
   return (
-    <ResizableTableContainer style={{width: 400, overflow: 'auto'}}>
-      <Table aria-label="Example table" {...args}>
-        <TableHeader>
-          <Column width={30} minWidth={0}><MyCheckbox slot="selection" /></Column>
-          <MyColumn isRowHeader defaultWidth="30%">Name</MyColumn>
-          <MyColumn>Type</MyColumn>
-          <MyColumn>Date Modified</MyColumn>
-          <MyColumn>Actions</MyColumn>
-        </TableHeader>
-        <TableBody items={list.items}>
-          {item => (
-            <Row>
-              <Cell><MyCheckbox slot="selection" /></Cell>
-              <Cell>{item.name}</Cell>
-              <Cell>{item.type}</Cell>
-              <Cell>{item.date}</Cell>
-              <Cell>
-                <DialogTrigger>
-                  <Button>Delete</Button>
-                  <ModalOverlay
-                    style={{
-                      position: 'fixed',
-                      zIndex: 100,
-                      top: 0,
-                      left: 0,
-                      bottom: 0,
-                      right: 0,
-                      background: 'rgba(0, 0, 0, 0.5)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}>
-                    <Modal
+    <div style={{width: 600, overflow: 'auto'}}>
+      <ResizableTableContainer>
+        <Table aria-label="Example table" {...args}>
+          <TableHeader>
+            <Column width={30} minWidth={0}><MyCheckbox slot="selection" /></Column>
+            <MyColumn isRowHeader defaultWidth="30%">Name</MyColumn>
+            <MyColumn>Type</MyColumn>
+            <MyColumn>Date Modified</MyColumn>
+            <MyColumn>Actions</MyColumn>
+          </TableHeader>
+          <TableBody items={list.items}>
+            {item => (
+              <Row>
+                <Cell><MyCheckbox slot="selection" /></Cell>
+                <Cell>{item.name}</Cell>
+                <Cell>{item.type}</Cell>
+                <Cell>{item.date}</Cell>
+                <Cell>
+                  <DialogTrigger>
+                    <Button>Delete</Button>
+                    <ModalOverlay
                       style={{
-                        background: 'Canvas',
-                        color: 'CanvasText',
-                        border: '1px solid gray',
-                        padding: 30
+                        position: 'fixed',
+                        zIndex: 100,
+                        top: 0,
+                        left: 0,
+                        bottom: 0,
+                        right: 0,
+                        background: 'rgba(0, 0, 0, 0.5)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
                       }}>
-                      <Dialog>
-                        {({close}) => (<>
-                          <Heading slot="title">Delete item</Heading>
-                          <p>Are you sure?</p>
-                          <Button onPress={close}>Cancel</Button>
-                          <Button
-                            onPress={() => {
-                              close();
-                              list.remove(item.id);
-                            }}>
-                            Delete
-                          </Button>
-                        </>)}
-                      </Dialog>
-                    </Modal>
-                  </ModalOverlay>
-                </DialogTrigger>
-              </Cell>
-            </Row>
-          )}
-        </TableBody>
-      </Table>
-    </ResizableTableContainer>
+                      <Modal
+                        style={{
+                          background: 'Canvas',
+                          color: 'CanvasText',
+                          border: '1px solid gray',
+                          padding: 30
+                        }}>
+                        <Dialog>
+                          {({close}) => (<>
+                            <Heading slot="title">Delete item</Heading>
+                            <p>Are you sure?</p>
+                            <Button onPress={close}>Cancel</Button>
+                            <Button
+                              onPress={() => {
+                                close();
+                                list.remove(item.id);
+                              }}>
+                              Delete
+                            </Button>
+                          </>)}
+                        </Dialog>
+                      </Modal>
+                    </ModalOverlay>
+                  </DialogTrigger>
+                </Cell>
+              </Row>
+            )}
+          </TableBody>
+        </Table>
+      </ResizableTableContainer>
+    </div>
+  );
+};
+
+export const FixedColumnWidths: TableStory = (args) => {
+  let list = useListData({
+    initialItems: [
+      {id: 1, name: 'Games', date: '6/7/2020', type: 'File folder'},
+      {id: 2, name: 'Program Files', date: '4/7/2021', type: 'File folder'},
+      {id: 3, name: 'bootmgr', date: '11/20/2010', type: 'System file'},
+      {id: 4, name: 'log.txt', date: '1/18/2016', type: 'Text Document'}
+    ]
+  });
+
+  return (
+    <div style={{width: 600, overflow: 'auto'}}>
+      <ResizableTableContainer>
+        <Table aria-label="Example table with fixed column widths" {...args}>
+          <TableHeader>
+            <Column width={30} minWidth={0}><MyCheckbox slot="selection" /></Column>
+            <MyColumn isRowHeader width={100}>Name</MyColumn>
+            <MyColumn width={100}>Type</MyColumn>
+            <MyColumn width={100}>Date Modified</MyColumn>
+          </TableHeader>
+          <TableBody items={list.items}>
+            {item => (
+              <Row>
+                <Cell><MyCheckbox slot="selection" /></Cell>
+                <Cell>{item.name}</Cell>
+                <Cell>{item.type}</Cell>
+                <Cell>{item.date}</Cell>
+              </Row>
+            )}
+          </TableBody>
+        </Table>
+      </ResizableTableContainer>
+    </div>
   );
 };
 
@@ -474,7 +536,7 @@ function DndTableRender(props: DndTableProps): JSX.Element {
       </TableBody>
     </Table>
   );
-};
+}
 
 export const DndTable: StoryFn<typeof DndTableRender> = (props) => {
   return (
@@ -517,7 +579,7 @@ function DndTableExampleRender(props: DndTableExampleProps): JSX.Element {
         isDisabled={props.isDisabledSecondTable} />
     </div>
   );
-};
+}
 
 export const DndTableExample: StoryFn<typeof DndTableExampleRender> = (props) => {
   return <DndTableExampleRender {...props} />;
@@ -631,9 +693,9 @@ const MyTableLoadingIndicator = (props) => {
     // These styles will make the load more spinner sticky. A user would know if their table is virtualized and thus could control this styling if they wanted to
     // TODO: this doesn't work because the virtualizer wrapper around the table body has overflow: hidden. Perhaps could change this by extending the table layout and
     // making the layoutInfo for the table body have allowOverflow
-    <TableLoadMoreItem style={{height: 30, width: tableWidth}} {...otherProps}>
+    (<TableLoadMoreItem style={{height: 30, width: tableWidth}} {...otherProps}>
       <LoadingSpinner style={{height: 20, position: 'unset'}} />
-    </TableLoadMoreItem>
+    </TableLoadMoreItem>)
   );
 };
 
@@ -1606,5 +1668,58 @@ export const TableWithReactTransition: TableStory = () => {
         </TableBody>
       </Table>
     </div>
+  );
+};
+
+function NameCell(props: CellProps) {
+  return (
+    <Cell style={({level}) => ({paddingLeft: (level - 1) * 32})}>
+      {({hasChildItems, isTreeColumn, isExpanded}) => (<>
+        {hasChildItems && isTreeColumn && (
+          <Button className={styles.chevron} slot="chevron">
+            <div style={{transform: `rotate(${isExpanded ? 90 : 0}deg)`, width: '16px', height: '16px'}}>
+              <svg viewBox="0 0 24 24" style={{width: '16px', height: '16px'}}>
+                <path d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+              </svg>
+            </div>
+          </Button>
+        )}
+        {props.children}
+      </>)}
+    </Cell>
+  );
+}
+
+export const TableNestedRows: TableStory = (args) => {
+  return (
+    <Table aria-label="Files" selectionMode="multiple" treeColumn="name" {...args}>
+      <TableHeader>
+        <Column id="name" isRowHeader>Name</Column>
+        <Column id="type">Type</Column>
+        <Column id="date">Date Modified</Column>
+      </TableHeader>
+      <TableBody>
+        <MyRow>
+          <NameCell>Games</NameCell>
+          <Cell>File folder</Cell>
+          <Cell>6/7/2020</Cell>
+          <MyRow>
+            <NameCell>Pokemon</NameCell>
+            <Cell>File</Cell>
+            <Cell>2/3/2025</Cell>
+          </MyRow>
+        </MyRow>
+        <MyRow>
+          <NameCell>Program Files</NameCell>
+          <Cell>File folder</Cell>
+          <Cell>4/7/2021</Cell>
+        </MyRow>
+        <MyRow>
+          <NameCell>bootmgr</NameCell>
+          <Cell>System file</Cell>
+          <Cell>11/20/2010</Cell>
+        </MyRow>
+      </TableBody>
+    </Table>
   );
 };

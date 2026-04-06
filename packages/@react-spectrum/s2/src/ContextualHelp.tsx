@@ -1,21 +1,25 @@
 import {ActionButton} from './ActionButton';
 import {AriaLabelingProps, DOMProps, FocusableRef, FocusableRefValue} from '@react-types/shared';
 import {ContentContext, FooterContext, HeadingContext, TextContext as SpectrumTextContext} from './Content';
-import {ContextValue, DEFAULT_SLOT, Provider, Dialog as RACDialog, TextContext} from 'react-aria-components';
+import {ContextValue, DEFAULT_SLOT, Provider} from 'react-aria-components/slots';
 import {createContext, forwardRef, ReactNode} from 'react';
 import {dialogInner} from './Dialog';
 import {DialogTrigger, DialogTriggerProps} from './DialogTrigger';
-import {filterDOMProps, mergeProps, useLabels, useSlotId} from '@react-aria/utils';
+import {filterDOMProps} from 'react-aria/filterDOMProps';
 import HelpIcon from '../s2wf-icons/S2_Icon_HelpCircle_20_N.svg';
 import InfoIcon from '../s2wf-icons/S2_Icon_InfoCircle_20_N.svg';
-// @ts-ignore
 import intlMessages from '../intl/*.json';
+import {mergeProps} from 'react-aria/mergeProps';
 import {mergeStyles} from '../style/runtime';
-import {Placement} from '@react-types/overlays';
+import {Placement} from 'react-aria-components/Popover';
+// @ts-ignore
 import {Popover, PopoverDialogProps} from './Popover';
 import {space, style} from '../style' with {type: 'macro'};
 import {StyleProps} from './style-utils' with { type: 'macro' };
-import {useLocalizedStringFormatter} from '@react-aria/i18n';
+import {TextContext} from 'react-aria-components/Text';
+import {useId} from 'react-aria/useId';
+import {useLabels} from 'react-aria/private/utils/useLabels';
+import {useLocalizedStringFormatter} from 'react-aria/useLocalizedStringFormatter';
 import {useSpectrumContextProps} from './useSpectrumContextProps';
 
 export interface ContextualHelpPopoverProps extends PopoverDialogProps {
@@ -44,16 +48,18 @@ const headingStyles = style({
  */
 export function ContextualHelpPopover(props: ContextualHelpPopoverProps) {
   let {children, ...popoverProps} = props;
-  let titleId = useSlotId();
+  let titleId = useId();
+
   return (
     <Popover
       padding="none"
       hideArrow
+      aria-labelledby={titleId}
       {...popoverProps}>
       <div
         className={wrappingDiv}>
-        <RACDialog
-          aria-labelledby={titleId}
+        <div
+
           className={mergeStyles(dialogInner, style({borderRadius: 'none', margin: 'calc(self(paddingTop) * -1)', padding: 24}))}>
           <Provider
             values={[
@@ -71,7 +77,7 @@ export function ContextualHelpPopover(props: ContextualHelpPopoverProps) {
                   // ContextualHelp (they get the aria-labelled by from the button)
                   // otherwise, use the heading if available aka unavaiable menu item
                   [DEFAULT_SLOT]: {styles: headingStyles},
-                  title: {id: titleId, styles: headingStyles}
+                  title: {id: titleId, styles: headingStyles, level: 2}
                 }
               }],
               [ContentContext, {styles: style({
@@ -84,7 +90,7 @@ export function ContextualHelpPopover(props: ContextualHelpPopoverProps) {
             ]}>
             {children}
           </Provider>
-        </RACDialog>
+        </div>
       </div>
     </Popover>
   );

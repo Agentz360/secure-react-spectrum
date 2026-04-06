@@ -10,10 +10,12 @@
  * governing permissions and limitations under the License.
  */
 
-import {AriaTreeItemOptions, AriaTreeProps, DraggableItemResult, DropIndicatorAria, DropIndicatorProps, DroppableCollectionResult, FocusScope, ListKeyboardDelegate, mergeProps, useCollator, useFocusRing,  useGridListSection, useGridListSelectionCheckbox, useHover, useId, useLocale, useTree, useTreeItem, useVisuallyHidden} from 'react-aria';
-import {BaseCollection, Collection, CollectionBuilder, CollectionNode, createBranchComponent, createLeafComponent, LoaderNode, SectionNode, useCachedChildren} from '@react-aria/collections';
+import {AriaTreeItemOptions, useTreeItem} from 'react-aria/useTree';
+
+import {AriaTreeProps, useTree} from 'react-aria/useTree';
+import {BaseCollection, CollectionNode, LoaderNode, SectionNode} from 'react-aria/private/collections/BaseCollection';
 import {ButtonContext} from './Button';
-import {CheckboxContext} from './RSPContexts';
+import {CheckboxContext} from './Checkbox';
 import {
   ChildrenOrFunction,
   ClassNameOrFunction,
@@ -28,18 +30,39 @@ import {
   useContextProps,
   useRenderProps
 } from './utils';
+import {Collection} from 'react-aria/Collection';
+import {CollectionBuilder, createBranchComponent, createLeafComponent} from 'react-aria/CollectionBuilder';
 import {CollectionProps, CollectionRendererContext, DefaultCollectionRenderer, ItemRenderProps, SectionProps} from './Collection';
 import {DisabledBehavior, DragPreviewRenderer, Expandable, forwardRefType, GlobalDOMAttributes, HoverEvents, Key, LinkDOMProps, MultipleSelection, PressEvents, RefObject, SelectionMode} from '@react-types/shared';
 import {DragAndDropContext, DropIndicatorContext, useDndPersistedKeys, useRenderDropIndicator} from './DragAndDrop';
 import {DragAndDropHooks} from './useDragAndDrop';
-import {DraggableCollectionState, DroppableCollectionState, Node, SelectionBehavior, TreeState, useTreeState} from 'react-stately';
-import {filterDOMProps, inertValue, LoadMoreSentinelProps, useLoadMoreSentinel, useObjectRef} from '@react-aria/utils';
+import {DraggableCollectionState} from 'react-stately/useDraggableCollectionState';
+import {DraggableItemResult} from 'react-aria/useDraggableCollection';
+import {DropIndicatorAria, DropIndicatorProps, DroppableCollectionResult} from 'react-aria/useDroppableCollection';
+import {DroppableCollectionState} from 'react-stately/useDroppableCollectionState';
+import {filterDOMProps} from 'react-aria/filterDOMProps';
+import {FocusScope} from 'react-aria/FocusScope';
 import {GridListHeader, GridListHeaderContext, GridListHeaderInnerContext, GridListHeaderProps} from './GridList';
+import {inertValue} from 'react-aria/private/utils/inertValue';
+import {ListKeyboardDelegate} from 'react-aria/ListKeyboardDelegate';
+import {LoadMoreSentinelProps, useLoadMoreSentinel} from 'react-aria/private/utils/useLoadMoreSentinel';
+import {mergeProps} from 'react-aria/mergeProps';
+import {Node, SelectionBehavior} from '@react-types/shared';
 import React, {createContext, ForwardedRef, forwardRef, JSX, ReactNode, useContext, useEffect, useMemo, useRef, useState} from 'react';
 import {SelectionIndicatorContext} from './SelectionIndicator';
 import {SharedElementTransition} from './SharedElementTransition';
 import {TreeDropTargetDelegate} from './TreeDropTargetDelegate';
-import {useControlledState} from '@react-stately/utils';
+import {TreeState, useTreeState} from 'react-stately/useTreeState';
+import {useCachedChildren} from 'react-aria/private/collections/useCachedChildren';
+import {useCollator} from 'react-aria/useCollator';
+import {useControlledState} from 'react-stately/useControlledState';
+import {useFocusRing} from 'react-aria/useFocusRing';
+import {useGridListSection, useGridListSelectionCheckbox} from 'react-aria/useGridList';
+import {useHover} from 'react-aria/useHover';
+import {useId} from 'react-aria/useId';
+import {useLocale} from 'react-aria/I18nProvider';
+import {useObjectRef} from 'react-aria/useObjectRef';
+import {useVisuallyHidden} from 'react-aria/VisuallyHidden';
 
 class TreeCollection<T> extends BaseCollection<T> {
   private expandedKeys: Set<Key> = new Set();
@@ -414,31 +437,6 @@ function TreeInner<T extends object>({props, collection, treeRef: ref}: TreeInne
       ref
     );
 
-    // Prevent dropping items onto themselves or their descendants
-    let originalGetDropOperation = dropState.getDropOperation;
-    dropState.getDropOperation = (options) => {
-      let {target, isInternal} = options;
-      let currentDraggingKeys = dragState?.draggingKeys ?? new Set();
-
-      if (isInternal && target.type === 'item' && currentDraggingKeys.size > 0) {
-        if (currentDraggingKeys.has(target.key) && target.dropPosition === 'on') {
-          return 'cancel';
-        }
-
-        let currentKey: Key | null = target.key;
-        while (currentKey != null) {
-          let item = state.collection.getItem(currentKey);
-          let parentKey = item?.parentKey;
-          if (parentKey != null && currentDraggingKeys.has(parentKey)) {
-            return 'cancel';
-          }
-          currentKey = parentKey ?? null;
-        }
-      }
-
-      return originalGetDropOperation(options);
-    };
-
     isRootDropTarget = dropState.isDropTarget({type: 'root'});
   }
 
@@ -733,92 +731,90 @@ export const TreeItem = /*#__PURE__*/ createBranchComponent(TreeItemNode, <T ext
   delete DOMProps.id;
   delete DOMProps.onClick;
 
-  return (
-    <>
-      {dropIndicator && !dropIndicator.isHidden && (
-      <div
-        role="row"
-        aria-level={rowProps['aria-level']}
-        aria-expanded={rowProps['aria-expanded']}
-        aria-label={dropIndicator.dropIndicatorProps['aria-label']}>
-        <div role="gridcell" aria-colindex={1} style={{display: 'contents'}}>
-          <div role="button" {...visuallyHiddenProps} {...dropIndicator.dropIndicatorProps} ref={dropIndicatorRef} />
-          {rowProps['aria-expanded'] != null ? (
-            // Button to allow touch screen reader users to expand the item while dragging.
-            <div
-              role="button"
-              {...visuallyHiddenProps}
-              id={activateButtonId}
-              aria-label={expandButtonProps['aria-label']}
-              aria-labelledby={`${activateButtonId} ${rowProps.id}`}
-              tabIndex={-1}
-              ref={activateButtonRef} />
-          ) : null}
-        </div>
+  return (<>
+    {dropIndicator && !dropIndicator.isHidden && (
+    <div
+      role="row"
+      aria-level={rowProps['aria-level']}
+      aria-expanded={rowProps['aria-expanded']}
+      aria-label={dropIndicator.dropIndicatorProps['aria-label']}>
+      <div role="gridcell" aria-colindex={1} style={{display: 'contents'}}>
+        <div role="button" {...visuallyHiddenProps} {...dropIndicator.dropIndicatorProps} ref={dropIndicatorRef} />
+        {rowProps['aria-expanded'] != null ? (
+          // Button to allow touch screen reader users to expand the item while dragging.
+          (<div
+            role="button"
+            {...visuallyHiddenProps}
+            id={activateButtonId}
+            aria-label={expandButtonProps['aria-label']}
+            aria-labelledby={`${activateButtonId} ${rowProps.id}`}
+            tabIndex={-1}
+            ref={activateButtonRef} />)
+        ) : null}
       </div>
-    )}
-      <dom.div
-        {...mergeProps(
-          DOMProps,
-          rowProps,
-          focusProps,
-          hoverProps,
-          focusWithinProps,
-          draggableItem?.dragProps
-        )}
-        {...renderProps}
-        ref={ref}
-      // TODO: missing selectionBehavior, hasAction and allowsSelection data attribute equivalents (available in renderProps). Do we want those?
-        data-expanded={(hasChildItems && isExpanded) || undefined}
-        data-has-child-items={hasChildItems || undefined}
-        data-level={level}
-        data-selected={states.isSelected || undefined}
-        data-disabled={states.isDisabled || undefined}
-        data-hovered={isHovered || undefined}
-        data-focused={states.isFocused || undefined}
-        data-focus-visible={isFocusVisible || undefined}
-        data-pressed={states.isPressed || undefined}
-        data-selection-mode={state.selectionManager.selectionMode === 'none' ? undefined : state.selectionManager.selectionMode}
-        data-allows-dragging={!!dragState || undefined}
-        data-dragging={isDragging || undefined}
-        data-drop-target={isDropTarget || undefined}>
-        <div {...gridCellProps} style={{display: 'contents'}}>
-          <Provider
-            values={[
-              [CheckboxContext, {
-                slots: {
-                  selection: checkboxProps
-                }
-              }],
-            // TODO: support description in the tree row
-            // TODO: don't think I need to pass isExpanded to the button here since it can be sourced from the renderProps? Might be worthwhile passing it down?
-              [ButtonContext, {
-                slots: {
-                  [DEFAULT_SLOT]: {},
-                  chevron: {
-                    ...expandButtonProps,
-                    ref: expandButtonRef
-                  },
-                  drag: {
-                    ...draggableItem?.dragButtonProps,
-                    ref: dragButtonRef,
-                    style: {
-                      pointerEvents: 'none'
-                    }
+    </div>
+  )}
+    <dom.div
+      {...mergeProps(
+        DOMProps,
+        rowProps,
+        focusProps,
+        hoverProps,
+        focusWithinProps,
+        draggableItem?.dragProps
+      )}
+      {...renderProps}
+      ref={ref}
+    // TODO: missing selectionBehavior, hasAction and allowsSelection data attribute equivalents (available in renderProps). Do we want those?
+      data-expanded={(hasChildItems && isExpanded) || undefined}
+      data-has-child-items={hasChildItems || undefined}
+      data-level={level}
+      data-selected={states.isSelected || undefined}
+      data-disabled={states.isDisabled || undefined}
+      data-hovered={isHovered || undefined}
+      data-focused={states.isFocused || undefined}
+      data-focus-visible={isFocusVisible || undefined}
+      data-pressed={states.isPressed || undefined}
+      data-selection-mode={state.selectionManager.selectionMode === 'none' ? undefined : state.selectionManager.selectionMode}
+      data-allows-dragging={!!dragState || undefined}
+      data-dragging={isDragging || undefined}
+      data-drop-target={isDropTarget || undefined}>
+      <div {...gridCellProps} style={{display: 'contents'}}>
+        <Provider
+          values={[
+            [CheckboxContext, {
+              slots: {
+                selection: checkboxProps
+              }
+            }],
+          // TODO: support description in the tree row
+          // TODO: don't think I need to pass isExpanded to the button here since it can be sourced from the renderProps? Might be worthwhile passing it down?
+            [ButtonContext, {
+              slots: {
+                [DEFAULT_SLOT]: {},
+                chevron: {
+                  ...expandButtonProps,
+                  ref: expandButtonRef
+                },
+                drag: {
+                  ...draggableItem?.dragButtonProps,
+                  ref: dragButtonRef,
+                  style: {
+                    pointerEvents: 'none'
                   }
                 }
-              }],
-              [TreeItemContentContext, {
-                ...renderPropValues
-              }],
-            [SelectionIndicatorContext, {isSelected: states.isSelected}]
-            ]}>
-            {children}
-          </Provider>
-        </div>
-      </dom.div>
-    </>
-  );
+              }
+            }],
+            [TreeItemContentContext, {
+              ...renderPropValues
+            }],
+          [SelectionIndicatorContext, {isSelected: states.isSelected}]
+          ]}>
+          {children}
+        </Provider>
+      </div>
+    </dom.div>
+  </>);
 });
 
 export interface TreeLoadMoreItemRenderProps {
@@ -1003,16 +999,16 @@ function RootDropIndicator() {
   );
 }
 
-export interface GridListSectionProps<T> extends SectionProps<T>, DOMRenderProps<'section', undefined>  {}
+export interface GridListSectionProps<T> extends SectionProps<T>, DOMRenderProps<'div', undefined>  {}
 
 /**
  * A TreeSection represents a section within a Tree.
  */
-export const TreeSection = /*#__PURE__*/ createBranchComponent(SectionNode, <T extends object>(props: GridListSectionProps<T>, ref: ForwardedRef<HTMLElement>, item: Node<T>) => {
+export const TreeSection = /*#__PURE__*/ createBranchComponent(SectionNode, <T extends object>(props: GridListSectionProps<T>, ref: ForwardedRef<HTMLDivElement>, item: Node<T>) => {
   let state = useContext(TreeStateContext)!;
   let {CollectionBranch} = useContext(CollectionRendererContext);
   let headingRef = useRef(null);
-  ref = useObjectRef<HTMLElement>(ref);
+  ref = useObjectRef<HTMLDivElement>(ref);
   let {rowHeaderProps, rowProps, rowGroupProps} = useGridListSection({
     'aria-label': props['aria-label'] ?? undefined
   }, state, ref);
@@ -1028,7 +1024,7 @@ export const TreeSection = /*#__PURE__*/ createBranchComponent(SectionNode, <T e
   delete DOMProps.id;
 
   return (
-    <dom.section
+    <dom.div
       {...mergeProps(DOMProps, renderProps, rowGroupProps)}
       ref={ref}>
       <Provider
@@ -1040,7 +1036,7 @@ export const TreeSection = /*#__PURE__*/ createBranchComponent(SectionNode, <T e
           collection={state.collection}
           parent={item} />
       </Provider>
-    </dom.section>
+    </dom.div>
   );
 });
 

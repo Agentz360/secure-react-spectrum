@@ -3,26 +3,27 @@ import {
   Button,
   Collection,
   Column as AriaColumn,
-  ColumnProps as AriaColumnProps,
+  type ColumnProps as AriaColumnProps,
   Row as AriaRow,
-  RowProps,
+  type RowProps,
   Table as AriaTable,
   TableHeader as AriaTableHeader,
-  TableHeaderProps,
-  TableProps,
+  type TableHeaderProps,
+  type TableProps,
   useTableOptions,
-  TableBodyProps,
+  type TableBodyProps,
   TableBody as AriaTableBody,
-  CellProps,
+  type CellProps,
   Cell as AriaCell,
   ColumnResizer,
-  Group,
   TableLoadMoreItem as AriaTableLoadMoreItem,
-  TableLoadMoreItemProps
-} from 'react-aria-components';
+  type TableLoadMoreItemProps,
+} from 'react-aria-components/Table';
+import { Group } from 'react-aria-components/Group';
+import { composeRenderProps } from 'react-aria-components/composeRenderProps';
 import {Checkbox} from './Checkbox';
 import {ProgressCircle} from './ProgressCircle';
-import {ChevronUp, ChevronDown, GripVertical} from 'lucide-react';
+import {ChevronUp, ChevronDown, GripVertical, ChevronRight} from 'lucide-react';
 import './Table.css';
 
 export function Table(props: TableProps) {
@@ -112,7 +113,18 @@ export function TableBody<T extends object>(props: TableBodyProps<T>) {
 }
 
 export function Cell(props: CellProps) {
-  return <AriaCell {...props} />;
+  return (
+    <AriaCell {...props}>
+      {composeRenderProps(props.children, (children, {hasChildItems, isTreeColumn}) => (<>
+        {isTreeColumn && hasChildItems && 
+          <Button slot="chevron">
+            <ChevronRight />
+          </Button>
+        }
+        {children}
+      </>))}
+    </AriaCell>
+  )
 }
 
 export function TableLoadMoreItem(props: TableLoadMoreItemProps) {

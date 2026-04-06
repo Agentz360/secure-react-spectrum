@@ -27,6 +27,7 @@ export type {
   CycleOptions,
   CycleTimeOptions
 } from './types';
+export type {DateValue} from './CalendarDate';
 
 export {CalendarDate, CalendarDateTime, Time, ZonedDateTime} from './CalendarDate';
 export {GregorianCalendar} from './calendars/GregorianCalendar';
@@ -66,7 +67,6 @@ export {
   getLocalTimeZone,
   setLocalTimeZone,
   resetLocalTimeZone,
-  isLocalTimeZoneOverridden,
   startOfMonth,
   startOfWeek,
   startOfYear,
